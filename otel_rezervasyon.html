@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Otel Etkinlik Rezervasyonu</title>
+<style>
+body {font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#f4f7f6; color:#333; margin:0; padding:20px;}
+.container {max-width:900px; margin:auto; background:#fff; padding:25px; border-radius:12px; box-shadow:0 8px 25px rgba(0,0,0,0.1);}
+h1 {text-align:center; color:#004d40; font-size:2em; margin-bottom:20px;}
+.logo {text-align:center; margin-bottom:20px;}
+.logo img {max-width:150px; height:auto;}
+.event-cards {display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:15px; margin-bottom:25px;}
+.card {background:linear-gradient(135deg,#e0f2f1,#b2dfdb); border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); cursor:pointer; transition: transform 0.3s ease, box-shadow 0.3s ease; text-align:center; padding:15px; display:flex; flex-direction:column; justify-content:center; align-items:center;}
+.card:hover {transform:translateY(-5px); box-shadow:0 6px 20px rgba(0,0,0,0.15);}
+.card-icon {font-size:3em; margin-bottom:10px; color:#00796b;}
+.card span {font-size:1.1em; font-weight:bold; color:#004d40;}
+#eventDetail {display:none; background:#f8fcfb; padding:20px; border-radius:10px; border:1px solid #b2dfdb;}
+#selectedEventTitle {color:#004d40; margin-bottom:15px; text-align:center;}
+#eventImages {display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:20px; padding-bottom:10px;}
+#eventImages div {position:relative; display:inline-block;}
+#eventImages img {
+    max-width: 800px;
+    width: 100%;
+    height: auto;
+    border-radius:8px; 
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+    cursor: pointer;
+}
+.delete-btn {position:absolute; top:2px; right:2px; background:rgba(0,0,0,0.6); color:#fff; border:none; border-radius:50%; cursor:pointer; font-size:0.8em; padding:2px 6px;}
+form label {display:block; margin-top:15px; font-weight:bold; color:#555;}
+form input[type="text"], form input[type="date"], form input[type="number"], form input[type="time"], form textarea {width:100%; padding:12px; margin-top:8px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; transition:border-color 0.3s;}
+form input:focus, form textarea:focus {border-color:#00796b; outline:none;}
+.send-btn {margin-top:20px; padding:12px; background:#25D366; color:#fff; border:none; border-radius:8px; width:100%; font-size:1.1em; cursor:pointer; transition: background-color 0.3s ease;}
+.send-btn:hover {background-color:#1ea04d;}
+#guestInfo {background:#e0f7fa; padding:15px; border-radius:10px; margin-bottom:20px; box-shadow:0 4px 10px rgba(0,0,0,0.1);}
+#adminPanel {display:none; margin-top:40px; padding:10px; background:#b2dfdb; border-radius:8px; font-size:0.9em;}
+#adminPanel input[type="file"] {margin-top:5px; font-size:0.9em;}
+#adminPanel select {font-size:0.9em;}
+#adminPanel button {margin-top:5px; padding:5px 10px; border:none; border-radius:6px; cursor:pointer; font-size:0.9em;}
+#adminPanel button.add {background-color:#00796b; color:#fff;}
+#adminPanel button.clear {background-color:#e53935; color:#fff;}
+#adminMsg {margin-top:8px; font-size:0.9em; color:#222;}
+
+/* Fullscreen Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: rgba(0,0,0,0.9);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 15px;
+}
+.modal-content {
+    margin: auto;
+    display: block;
+    max-width: 90%;
+    max-height: 90%;
+}
+.modal-close {
+    position: absolute;
+    top: 20px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    transition: 0.3s;
+    cursor: pointer;
+}
+.modal-close:hover,
+.modal-close:focus {
+    color: #bbb;
+    text-decoration: none;
+    cursor: pointer;
+}
+.modal-prev, .modal-next {
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    width: auto;
+    padding: 16px;
+    margin-top: -50px;
+    color: white;
+    font-weight: bold;
+    font-size: 20px;
+    transition: 0.6s ease;
+    border-radius: 0 3px 3px 0;
+    user-select: none;
+}
+.modal-next {
+    right: 0;
+    border-radius: 3px 0 0 3px;
+}
+.modal-prev {
+    left: 0;
+    border-radius: 0 3px 3px 0;
+}
+.modal-prev:hover, .modal-next:hover {
+    background-color: rgba(0,0,0,0.8);
+}
+
+.modal-reserve-btn {
+    padding: 12px 25px;
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #fff;
+    background-color: #00796b;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    text-decoration: none;
+}
+.modal-reserve-btn:hover {
+    background-color: #004d40;
+}
+
+/* Yeni Rezervasyon Formu Stilleri */
+#specificReservationForm {
+    display: none;
+    background:#f8fcfb;
+    padding:20px;
+    border-radius:10px;
+    border:1px solid #b2dfdb;
+    margin-top: 20px;
+}
+
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="logo"><img src="https://via.placeholder.com/150x80.png?text=OTEL+LOGOSU" alt="Otel Logosu"></div>
+    <h1>Otel Etkinlik ve Tur Rezervasyonları</h1>
+
+    <div class="event-cards">
+        <div class="card" data-event="Tur ve Gezi"><span class="card-icon">⛵</span><span>Tur & Gezi</span></div>
+        <div class="card" data-event="Restoran Rezervasyonu"><span class="card-icon">🍽️</span><span>Restoran</span></div>
+        <div class="card" data-event="Spa ve Masaj"><span class="card-icon">💆‍♀️</span><span>Spa & Masaj</span></div>
+        <div class="card" data-event="Diğer Etkinlikler"><span class="card-icon">🎉</span><span>Diğer</span></div>
+    </div>
+
+    <div id="eventDetail">
+        <h2 id="selectedEventTitle"></h2>
+        <div id="eventImages"></div>
+        <div id="guestInfo">
+            <label>Ad Soyad:
+                <input type="text" id="name" placeholder="Adınız Soyadınız" required>
+            </label>
+        </div>
+        <form id="reservationForm">
+            <input type="hidden" id="event" required>
+            <label>Oda No:<input type="text" id="room" placeholder="Oda Numaranız" required></label>
+            <label>Tarih:<input type="date" id="date" required></label>
+            <label>Saat:<input type="time" id="time" required></label>
+            <label>Kişi Sayısı:<input type="number" id="people" min="1" value="1" required></label>
+            <label>Not (Opsiyonel):<textarea id="note" placeholder="Özel istekleriniz, alerjileriniz veya notlarınız"></textarea></label>
+            <a id="whatsappLink" href="#" target="_blank"><button type="button" class="send-btn">WhatsApp ile Gönder</button></a>
+        </form>
+    </div>
+
+    <div id="specificReservationForm">
+        <h2 id="specificReservationTitle">Seçilen Ürün için Rezervasyon</h2>
+        <img id="specificReservationImage" style="max-width: 250px; height: auto; border-radius: 8px; margin-bottom: 15px;">
+        <p><strong>Katalog:</strong> <span id="specificEventName"></span></p>
+        <p><strong>Ürün Kodu:</strong> <span id="specificPhotoId"></span></p>
+        <div id="specificGuestInfo">
+            <label>Ad Soyad:
+                <input type="text" id="specificName" placeholder="Adınız Soyadınız" required>
+            </label>
+        </div>
+        <form id="specificForm">
+            <input type="hidden" id="specificEvent" required>
+            <input type="hidden" id="specificPhoto" required>
+            <label>Oda No:<input type="text" id="specificRoom" placeholder="Oda Numaranız" required></label>
+            <label>Tarih:<input type="date" id="specificDate" required></label>
+            <label>Saat:<input type="time" id="specificTime" required></label>
+            <label>Kişi Sayısı:<input type="number" id="specificPeople" min="1" value="1" required></label>
+            <label>Not (Opsiyonel):<textarea id="specificNote" placeholder="Özel istekleriniz, alerjileriniz veya notlarınız"></textarea></label>
+            <a id="specificWhatsappLink" href="#" target="_blank"><button type="button" class="send-btn">WhatsApp ile Gönder</button></a>
+        </form>
+    </div>
+
+    <div id="adminPanel">
+        <strong>Admin Fotoğraf Yükleme:</strong><br>
+        Etkinlik Seç:
+        <select id="adminEventSelect">
+            <option value="Tur ve Gezi">Tur ve Gezi</option>
+            <option value="Restoran Rezervasyonu">Restoran Rezervasyonu</option>
+            <option value="Spa ve Masaj">Spa & Masaj</option>
+            <option value="Diğer Etkinlikler">Diğer</option>
+        </select><br>
+        Fotoğraf Seç:
+        <input type="file" id="adminUpload" accept="image/*" multiple><br>
+        <button class="add" id="adminAdd" type="button">Ekle</button>
+        <button class="clear" id="adminClear" type="button">Temizle</button>
+        <div id="adminMsg"></div>
+    </div>
+</div>
+
+<div id="imageModal" class="modal">
+    <span class="modal-close">&times;</span>
+    <img class="modal-content" id="modalImage">
+    <a class="modal-prev">&#10094;</a>
+    <a class="modal-next">&#10095;</a>
+    <a id="modalReserveBtn" class="modal-reserve-btn">Rezervasyon Yap</a>
+</div>
+
+<script>
+const phoneNumber = '905321234567';
+let currentEvent = '';
+
+/* IndexedDB setup */
+const dbName = 'OtelEventsDB';
+const dbVersion = 1;
+let db;
+
+function openDB(){
+    return new Promise((resolve,reject)=>{
+        const request = indexedDB.open(dbName, dbVersion);
+        request.onerror = e=>reject(e);
+        request.onsuccess = e=>{
+            db = e.target.result;
+            resolve(db);
+        };
+        request.onupgradeneeded = e=>{
+            db = e.target.result;
+            if(!db.objectStoreNames.contains('eventImages')){
+                const store = db.createObjectStore('eventImages',{keyPath:'id', autoIncrement:true});
+                store.createIndex('eventName','eventName',{unique:false});
+            }
+        };
+    });
+}
+
+function addImages(eventName, dataUrls){
+    return new Promise((resolve,reject)=>{
+        const tx = db.transaction('eventImages','readwrite');
+        const store = tx.objectStore('eventImages');
+        dataUrls.forEach(url=>{
+            store.add({eventName:eventName, data:url});
+        });
+        tx.oncomplete = ()=>resolve();
+        tx.onerror = e=>reject(e);
+    });
+}
+
+function getImages(eventName){
+    return new Promise((resolve,reject)=>{
+        const tx = db.transaction('eventImages','readonly');
+        const store = tx.objectStore('eventImages');
+        const index = store.index('eventName');
+        const request = index.getAll(eventName);
+        request.onsuccess = ()=>resolve(request.result);
+        request.onerror = e=>reject(e);
+    });
+}
+
+function deleteImage(id){
+    return new Promise((resolve,reject)=>{
+        const tx = db.transaction('eventImages','readwrite');
+        const store = tx.objectStore('eventImages');
+        store.delete(id);
+        tx.oncomplete = ()=>resolve();
+        tx.onerror = e=>reject(e);
+    });
+}
+
+/* DOM Elements */
+const cards = document.querySelectorAll('.card');
+const eventDetail = document.getElementById('eventDetail');
+const eventImagesContainer = document.getElementById('eventImages');
+const waLink = document.getElementById('whatsappLink');
+const adminPanel = document.getElementById('adminPanel');
+const adminUpload = document.getElementById('adminUpload');
+const adminAdd = document.getElementById('adminAdd');
+const adminClear = document.getElementById('adminClear');
+const adminEventSelect = document.getElementById('adminEventSelect');
+const adminMsg = document.getElementById('adminMsg');
+
+// Modal Elementleri
+const modal = document.getElementById('imageModal');
+const modalImg = document.getElementById('modalImage');
+const modalClose = document.getElementsByClassName('modal-close')[0];
+const modalPrev = document.getElementsByClassName('modal-prev')[0];
+const modalNext = document.getElementsByClassName('modal-next')[0];
+const modalReserveBtn = document.getElementById('modalReserveBtn');
+
+// Yeni Rezervasyon Formu Elementleri
+const specificReservationForm = document.getElementById('specificReservationForm');
+const specificReservationImage = document.getElementById('specificReservationImage');
+const specificEventName = document.getElementById('specificEventName');
+const specificPhotoId = document.getElementById('specificPhotoId');
+const specificWhatsappLink = document.getElementById('specificWhatsappLink');
+
+let currentImages = [];
+let currentImageIndex = 0;
+let currentEventData = [];
+
+/* Load images from IndexedDB */
+async function loadImages(eventName){
+    eventImagesContainer.innerHTML='';
+    const imgs = await getImages(eventName);
+    currentEventData = imgs;
+    currentImages = imgs.map(item => item.data);
+    
+    // Her bir resme ID ekle ve tıklama işlevini ayarla
+    imgs.forEach((item, index)=>{
+        const wrapper = document.createElement('div');
+        const img = document.createElement('img');
+        img.src = item.data;
+        img.alt = eventName+' image';
+        img.loading='lazy';
+        img.addEventListener('click', () => {
+            currentImageIndex = index;
+            openModal(item.data, item.id, eventName);
+        });
+        
+        const delBtn = document.createElement('button');
+        delBtn.textContent='❌';
+        delBtn.className='delete-btn';
+        delBtn.addEventListener('click', async (e)=>{
+            e.stopPropagation();
+            await deleteImage(item.id);
+            loadImages(eventName);
+            adminMsg.textContent='Resim silindi.';
+        });
+        wrapper.appendChild(img);
+        wrapper.appendChild(delBtn);
+        eventImagesContainer.appendChild(wrapper);
+    });
+}
+
+/* Modal Functions */
+function openModal(src, id, eventName) {
+    modal.style.display = 'flex';
+    modalImg.src = src;
+    modalReserveBtn.setAttribute('data-id', id);
+    modalReserveBtn.setAttribute('data-event-name', eventName);
+}
+
+modalClose.onclick = () => {
+    modal.style.display = 'none';
+};
+
+modalPrev.onclick = () => {
+    currentImageIndex = (currentImageIndex - 1 + currentImages.length) % currentImages.length;
+    modalImg.src = currentImages[currentImageIndex];
+    const item = currentEventData[currentImageIndex];
+    modalReserveBtn.setAttribute('data-id', item.id);
+    modalReserveBtn.setAttribute('data-event-name', item.eventName);
+};
+
+modalNext.onclick = () => {
+    currentImageIndex = (currentImageIndex + 1) % currentImages.length;
+    modalImg.src = currentImages[currentImageIndex];
+    const item = currentEventData[currentImageIndex];
+    modalReserveBtn.setAttribute('data-id', item.id);
+    modalReserveBtn.setAttribute('data-event-name', item.eventName);
+};
+
+modalReserveBtn.onclick = () => {
+    modal.style.display = 'none';
+    eventDetail.style.display = 'none'; // Kategori formunu gizle
+    specificReservationForm.style.display = 'block'; // Yeni formu göster
+    specificReservationForm.scrollIntoView({ behavior: 'smooth' });
+
+    // Seçilen fotoğrafın bilgilerini yeni forma aktar
+    const selectedPhotoId = modalReserveBtn.getAttribute('data-id');
+    const selectedEvent = modalReserveBtn.getAttribute('data-event-name');
+    const selectedPhotoData = currentEventData.find(item => item.id == selectedPhotoId);
+
+    specificReservationImage.src = selectedPhotoData.data;
+    specificEventName.textContent = selectedEvent;
+    specificPhotoId.textContent = selectedPhotoId;
+
+    // Gizli input alanlarını doldur
+    document.getElementById('specificEvent').value = selectedEvent;
+    document.getElementById('specificPhoto').value = selectedPhotoId;
+    
+    // WhatsApp linkini güncelle
+    updateSpecificLink();
+};
+
+/* Event selection */
+cards.forEach(card=>{
+    card.addEventListener('click', ()=>{
+        currentEvent = card.getAttribute('data-event');
+        eventDetail.style.display='block';
+        specificReservationForm.style.display = 'none'; // Diğer formu gizle
+        eventDetail.scrollIntoView({behavior:'smooth'});
+        loadImages(currentEvent);
+        adminPanel.style.display='block';
+        adminEventSelect.value=currentEvent;
+        adminMsg.textContent='';
+    });
+});
+
+/* WhatsApp link functions */
+const genericFormElements=['name','room','date','time','people','note'];
+genericFormElements.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('input',updateGenericLink);
+});
+
+function updateGenericLink(){
+    const name=encodeURIComponent(document.getElementById('name').value || '');
+    const room=encodeURIComponent(document.getElementById('room').value || '');
+    const event=encodeURIComponent(currentEvent);
+    const date=encodeURIComponent(document.getElementById('date').value || '');
+    const time=encodeURIComponent(document.getElementById('time').value || '');
+    const people=encodeURIComponent(document.getElementById('people').value || '');
+    const note=encodeURIComponent(document.getElementById('note').value || '');
+    const message=`Merhaba, bir rezervasyon talebim var.\n\n*Misafir:* ${name}\n*Oda No:* ${room}\n*Etkinlik:* ${event}\n*Tarih:* ${date}\n*Saat:* ${time}\n*Kişi Sayısı:* ${people}\n*Not:* ${note}`;
+    waLink.href=`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+}
+
+const specificFormElements=['specificName','specificRoom','specificDate','specificTime','specificPeople','specificNote'];
+specificFormElements.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('input',updateSpecificLink);
+});
+
+function updateSpecificLink(){
+    const name=encodeURIComponent(document.getElementById('specificName').value || '');
+    const room=encodeURIComponent(document.getElementById('specificRoom').value || '');
+    const event=encodeURIComponent(document.getElementById('specificEvent').value || '');
+    const photoId=encodeURIComponent(document.getElementById('specificPhoto').value || '');
+    const date=encodeURIComponent(document.getElementById('specificDate').value || '');
+    const time=encodeURIComponent(document.getElementById('specificTime').value || '');
+    const people=encodeURIComponent(document.getElementById('specificPeople').value || '');
+    const note=encodeURIComponent(document.getElementById('specificNote').value || '');
+    const message=`Merhaba, bir rezervasyon talebim var.\n\n*Misafir:* ${name}\n*Oda No:* ${room}\n*Katalog:* ${event}\n*Ürün Kodu:* ${photoId}\n*Tarih:* ${date}\n*Saat:* ${time}\n*Kişi Sayısı:* ${people}\n*Not:* ${note}`;
+    specificWhatsappLink.href=`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+}
+
+/* Admin Add and Clear */
+adminAdd.addEventListener('click', async ()=>{
+    adminMsg.textContent='';
+    const files = Array.from(adminUpload.files || []);
+    if(!files.length){ adminMsg.textContent='Lütfen önce fotoğraf seçin.'; return;}
+    const eventName = adminEventSelect.value;
+    try{
+        const dataUrls = await Promise.all(files.map(f=>{
+            return new Promise((resolve,reject)=>{
+                const reader = new FileReader();
+                reader.onload = e=>resolve(e.target.result);
+                reader.onerror = ()=>reject('Dosya okunamadı');
+                reader.readAsDataURL(f);
+            });
+        }));
+        await addImages(eventName,dataUrls);
+        if(eventName===currentEvent) loadImages(currentEvent);
+        adminMsg.textContent='Görseller yüklendi.';
+    }catch(e){ adminMsg.textContent='Hata: '+e;}
+    adminUpload.value='';
+});
+
+adminClear.addEventListener('click', async ()=>{
+    const eventName = adminEventSelect.value;
+    const imgs = await getImages(eventName);
+    for(let img of imgs){
+        await deleteImage(img.id);
+    }
+    if(eventName===currentEvent) loadImages(currentEvent);
+    adminMsg.textContent='Görseller temizlendi.';
+});
+
+/* Initialize */
+openDB();
+</script>
+</body>
+</html>
